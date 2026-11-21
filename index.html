@@ -7,7 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="loading">
+<div id="loader"><div class="lt1">Lakmi 💗</div><div class="lt2" id="ltxt">Getting everything ready…</div><div class="lbar"><i id="lbar"></i></div></div>
 <div id="world"></div>
 <div id="bokeh"></div>
 <div id="dusk"></div>
@@ -25,7 +26,7 @@
   </div>
   <div id="lyr"></div>
   <p id="ask"></p>
-  <button id="go" class="btn">🎶 Tap to begin</button>
+  <button id="go" class="btn" hidden>🎶 Tap to begin</button>
   <button id="blow" class="btn" hidden>💨 Blow the candles</button>
 </div>
 
@@ -35,12 +36,13 @@
   <div class="paper">
     <img class="seal" src="assets/stickers/heart1.png" alt="">
     <div id="msg"></div>
-    <div class="acts" hidden><button id="again" class="btn">🎉 Celebrate again</button><button id="replay" class="btn">🔁 Replay</button></div>
   </div>
 </div>
 
 <div id="lb"><button id="prev">‹</button><img alt=""><button id="next">›</button></div>
 <div id="toast"></div>
+<div id="cap"></div><div id="tick"></div>
+<div id="dock" hidden><button id="readl" class="btn">💌 Read letter</button><button id="again" class="btn">🎆 Show again</button><button id="replay" class="btn">🔁 Replay</button></div>
 <div id="hint"></div>
 <button id="snd" hidden aria-label="Toggle music">🔊</button>
 <canvas id="fx"></canvas>

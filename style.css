@@ -95,7 +95,7 @@ img{display:block;max-width:100%;-webkit-user-drag:none}
 .lan{display:block;height:calc(var(--s)*clamp(120px,17vw,200px));width:auto;filter:drop-shadow(0 0 16px #ff7aa8cc);animation:lglow 2.6s ease-in-out infinite alternate}
 @keyframes lglow{to{filter:drop-shadow(0 0 30px #ff3d7fee) brightness(1.1)}}
 #world{transition:transform .3s}
-.line{transition:transform .35s ease-out}
+.line{transition:transform .35s ease-out,filter 3s ease}
 /* extras */
 .bfw{position:fixed;left:0;z-index:45;display:none;pointer-events:none;animation:bfp var(--t) linear var(--dl) infinite}
 .clear .bfw{display:block}
@@ -124,4 +124,36 @@ img{display:block;max-width:100%;-webkit-user-drag:none}
 #hint{position:fixed;left:50%;bottom:5%;transform:translate(-50%,16px);z-index:82;font:700 1rem Quicksand,sans-serif;color:#fff;background:rgba(216,27,114,.88);padding:.65rem 1.3rem;border-radius:99px;box-shadow:0 8px 26px #0006;opacity:0;pointer-events:none;transition:.6s;white-space:nowrap}
 #hint.on{opacity:1;transform:translate(-50%,0)}
 .paper{transition:opacity .9s}
-#note.dim .paper{opacity:.28}
+
+/* loader */
+#loader{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;background:radial-gradient(circle at 50% 30%,#fff0f6,#ffc2dc 55%,#ff9ec4);transition:opacity 1s,visibility 1s}
+#loader.off{opacity:0;visibility:hidden}
+.lt1{font-family:'Great Vibes',cursive;font-size:clamp(3rem,12vw,6rem);color:#d81b72;text-shadow:0 0 24px #fff}
+.lt2{font:700 1.1rem Quicksand,sans-serif;color:#7a1f4d}
+.lbar{width:min(70vw,320px);height:10px;border-radius:9px;background:#fff9;overflow:hidden}
+.lbar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#ff7ab0,#d81b72);transition:width .3s}
+.loading *{animation-play-state:paused!important}
+#loader,#loader *{animation-play-state:running!important}
+body:not(.clear) .sw,body:not(.clear) .lan,body:not(.clear) .lt,body:not(.clear) #bokeh i{animation-play-state:paused}
+/* letter flip + fall */
+#note.gone .paper{animation:flipdown 2.3s cubic-bezier(.55,0,.75,.45) forwards;pointer-events:none}
+#note.back .paper{animation:flipup 1.3s cubic-bezier(.2,.9,.3,1) forwards}
+#msg{transition:opacity .3s}
+#note.gone #msg,#note.gone .seal{opacity:0;transition-delay:.55s}
+@keyframes flipdown{0%{transform:perspective(1200px) none;opacity:1}30%{transform:perspective(1200px) rotateY(180deg) scale(1.05)}100%{transform:perspective(1200px) translateY(125vh) rotateY(180deg) rotateZ(14deg) scale(.55);opacity:0}}
+@keyframes flipup{0%{transform:perspective(1200px) translateY(125vh) rotateY(180deg) scale(.55);opacity:0}100%{transform:perspective(1200px) none;opacity:1}}
+/* camera push-in on the photos */
+.zoom #world{animation:push 6s cubic-bezier(.3,0,.2,1) forwards,drift 34s ease-in-out 6s infinite alternate}
+@keyframes push{from{transform:scale(1)}to{transform:scale(1.28)}}
+@keyframes drift{from{transform:scale(1.28)}to{transform:scale(1.38) translate(-1.5%,1%)}}
+.zoom .line{filter:blur(calc(var(--b)*.3))!important}
+/* captions, ticker, dock */
+#cap{position:fixed;left:0;right:0;top:14%;z-index:81;pointer-events:none;text-align:center;font-family:'Great Vibes',cursive;font-size:clamp(2.6rem,10vw,6.5rem);line-height:1.15;color:#fff;text-shadow:0 0 22px #ff2d86,0 0 50px #ff5c9d,0 4px 14px #3a0f55;padding:0 4vw}
+#cap span{display:inline-block;opacity:0;filter:blur(12px);transform:translateY(24px) scale(1.4);animation:capin .8s cubic-bezier(.2,1.2,.4,1) forwards}
+#cap.out{opacity:0;transition:opacity 1s}
+@keyframes capin{to{opacity:1;filter:none;transform:none}}
+#tick{position:fixed;left:14px;top:14px;z-index:82;font:700 .85rem Quicksand,sans-serif;color:#fff;background:#3a0f55aa;padding:.4rem .9rem;border-radius:99px;opacity:0;transition:opacity .5s;pointer-events:none;letter-spacing:.04em}
+#tick.on{opacity:1}
+#dock{position:fixed;left:0;right:0;bottom:3%;z-index:90;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap;pointer-events:none}
+#dock .btn{pointer-events:auto;font-size:.95rem;padding:.7rem 1.2rem}
+#dock[hidden]{display:none}
