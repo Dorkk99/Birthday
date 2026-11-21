@@ -97,9 +97,6 @@ img{display:block;max-width:100%;-webkit-user-drag:none}
 #world{transition:transform .3s}
 .line{transition:transform .35s ease-out}
 /* extras */
-#rays{position:fixed;inset:-50%;z-index:7;pointer-events:none;opacity:0;transition:opacity 3s;background:repeating-conic-gradient(rgba(255,255,255,.28) 0 5deg,transparent 5deg 22deg);-webkit-mask:radial-gradient(circle,#000 5%,transparent 45%);mask:radial-gradient(circle,#000 5%,transparent 45%);animation:spin 70s linear infinite}
-.clear #rays{opacity:1}
-@keyframes spin{to{transform:rotate(360deg)}}
 .bfw{position:fixed;left:0;z-index:45;display:none;pointer-events:none;animation:bfp var(--t) linear var(--dl) infinite}
 .clear .bfw{display:block}
 .bfw img{width:var(--w);animation:flap .35s ease-in-out infinite alternate}
@@ -117,3 +114,14 @@ img{display:block;max-width:100%;-webkit-user-drag:none}
 #prev{left:14px}#next{right:14px}
 .paper::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.3) 50%,transparent 60%);background-size:250% 100%;animation:sheen 4.5s ease-in-out infinite;pointer-events:none}
 @keyframes sheen{from{background-position:150% 0}to{background-position:-100% 0}}
+
+/* night sky behind everything so fireworks pop */
+#dusk{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity 4s ease;background:radial-gradient(ellipse at 50% 115%,#8a1f6e 0%,#3a0f55 45%,#150626 100%)}
+.clear #dusk{opacity:1}
+#dusk i{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff;animation:tw 2.5s ease-in-out infinite alternate}
+@keyframes tw{from{opacity:.1;transform:scale(.7)}to{opacity:.95;transform:scale(1.6)}}
+#sky{position:fixed;inset:0;pointer-events:none;z-index:72}
+#hint{position:fixed;left:50%;bottom:5%;transform:translate(-50%,16px);z-index:82;font:700 1rem Quicksand,sans-serif;color:#fff;background:rgba(216,27,114,.88);padding:.65rem 1.3rem;border-radius:99px;box-shadow:0 8px 26px #0006;opacity:0;pointer-events:none;transition:.6s;white-space:nowrap}
+#hint.on{opacity:1;transform:translate(-50%,0)}
+.paper{transition:opacity .9s}
+#note.dim .paper{opacity:.28}

@@ -25,15 +25,16 @@ function bgStart(){if(!ac||bgTimer)return;bgNext=ac.currentTime+.1;mus.gain.setT
  bgTimer=setInterval(()=>{while(bgNext<ac.currentTime+.7){bar(bgBar%8,bgNext);bgNext+=BAR;bgBar++}},200)}
 const PENT=[84,86,88,91,93,96];
 function chimes(n=16,gap=.12){PENT.length&&Array.from({length:n}).forEach((_,i)=>bell(mtof(PENT[(Math.random()*6)|0]),1.4,.1,ac&&ac.currentTime+.02+i*gap))}
-function boom(){noise(.7,900,60,.5,'lowpass');noise(.4,6000,2000,.12,'highpass')}
+function boom(v=1){noise(.7,900,60,.5*v,'lowpass');noise(.4,6000,2000,.12*v,'highpass')}
+function whistle(){noise(.55,500,2600,.05)}
+function crackle(){if(!ac)return;for(let i=0;i<6;i++)setTimeout(()=>noise(.04,5000,3000,.09,'highpass'),i*R(30,90))}
 let muted=false;$('#snd').onclick=()=>{muted=!muted;if(ac)out.gain.setTargetAtTime(muted?0:.9,ac.currentTime,.1);$('#snd').textContent=muted?'🔇':'🔊'};
 /* ================= CANVAS: confetti, petals, wind, fireworks ================= */
-const cv=$('#fx'),cx=cv.getContext('2d');let P=[],S=[],F=[],wind=0;
+const cv=$('#fx'),cx=cv.getContext('2d');let P=[],S=[],wind=0;
 const fit=()=>{cv.width=innerWidth;cv.height=innerHeight};fit();addEventListener('resize',fit);
 const pick=()=>imgs[keys[(Math.random()*keys.length)|0]];
 function burst(x,y,n=70,sp=1){for(let i=0;i<n;i++){const a=R(0,6.283),s=R(4,15)*sp;P.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-6,r:R(0,6),vr:R(-.2,.2),w:R(16,40),img:pick(),life:R(110,200),a:1})}}
 function rain(n=50){for(let i=0;i<n;i++)P.push({x:R(0,cv.width),y:R(-400,-20),vx:R(-1,1),vy:R(2,6),r:0,vr:R(-.05,.05),w:R(16,38),img:pick(),life:420,a:1,g:0})}
-function firework(x,y){F.push({x:x??R(120,innerWidth-120),y:innerHeight,ty:y??R(80,innerHeight*.45),rocket:1,c:`hsl(${R(300,360)|0},100%,${R(65,80)|0}%)`})}
 (function loop(){cx.clearRect(0,0,cv.width,cv.height);
  if(wind>.02)for(let k=0;k<4*wind;k++)S.push({x:-200,y:R(0,cv.height),l:R(160,460),v:R(30,60),a:R(.25,.75),w:R(1,3.2)});
  S=S.filter(s=>s.x<cv.width+500);
@@ -41,10 +42,65 @@ function firework(x,y){F.push({x:x??R(120,innerWidth-120),y:innerHeight,ty:y??R(
  P=P.filter(p=>p.life>0&&p.y<cv.height+60);
  for(const p of P){p.x+=p.vx+wind*9;p.y+=p.vy;if(p.g!==0)p.vy+=.28,p.vx*=.99;p.r+=p.vr;p.life--;p.a=Math.min(1,p.life/40);
   cx.save();cx.globalAlpha=p.a;cx.translate(p.x,p.y);cx.rotate(p.r);cx.drawImage(p.img,-p.w/2,-p.w/2,p.w,p.w);cx.restore()}
- cx.globalCompositeOperation='lighter';const nf=[];
- for(const f of F){if(f.rocket){f.y-=14;cx.fillStyle=f.c;cx.fillRect(f.x-1.5,f.y,3,16);if(f.y<=f.ty){boom();for(let i=0;i<80;i++){const a=R(0,6.283),s=R(1,7.5);nf.push({x:f.x,y:f.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:R(50,90),c:f.c})}}else nf.push(f)}
-  else{f.x+=f.vx;f.y+=f.vy;f.vy+=.06;f.vx*=.985;f.life--;if(f.life>0){cx.globalAlpha=Math.min(1,f.life/30);cx.fillStyle=f.c;cx.beginPath();cx.arc(f.x,f.y,2.2,0,6.283);cx.fill();nf.push(f)}}}
- F=nf;cx.globalAlpha=1;cx.globalCompositeOperation='source-over';requestAnimationFrame(loop)})();
+ requestAnimationFrame(loop)})();
+
+/* ================= FIREWORKS ENGINE ================= */
+const sky=$('#sky'),sx=sky.getContext('2d');let RK=[],FP=[],FG=[];
+const fitS=()=>{sky.width=innerWidth;sky.height=innerHeight};fitS();addEventListener('resize',fitS);
+const PAL=[[335,100,72],[345,100,80],[320,100,74],[45,100,66],[52,100,78],[285,90,78],[195,100,76],[0,0,100],[15,100,70],[165,90,68],[350,100,62]];
+const rc=()=>PAL[(Math.random()*PAL.length)|0];
+const usc=()=>Math.min(1.1,Math.max(.62,Math.min(innerWidth,innerHeight*1.3)/760));
+function mk(x,y,vx,vy,c,o={}){const L=o.life||70;FP.push({x,y,vx,vy,cs:`${c[0]},${c[1]}%,${c[2]}%`,life:L,max:L,g:o.g??.05,f:o.f??.985,sz:o.sz||2.2,h:[],tl:o.tl??5,crk:o.crk,tw:o.tw})}
+const hx=t=>16*Math.sin(t)**3/17,hy=t=>-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/17;
+const SHAPE={
+ heart(){const a=[];for(let i=0;i<70;i++){const t=i/70*6.283;a.push([hx(t),hy(t)])}for(let i=0;i<34;i++){const t=i/34*6.283;a.push([.55*hx(t),.55*hy(t)])}return a},
+ star(){const v=[];for(let i=0;i<10;i++){const r=i%2?.42:1,t=i/10*6.283-1.5708;v.push([Math.cos(t)*r,Math.sin(t)*r])}const a=[];for(let i=0;i<10;i++){const p=v[i],q=v[(i+1)%10];for(let k=0;k<9;k++)a.push([p[0]+(q[0]-p[0])*k/9,p[1]+(q[1]-p[1])*k/9])}return a}};
+const TXT={};
+function txtPts(k){if(TXT[k])return TXT[k];const s=k,f=k==='19'?'bold 160px Quicksand,sans-serif':'bold 118px Quicksand,sans-serif';
+ const c=document.createElement('canvas'),g=c.getContext('2d');c.width=480;c.height=200;g.fillStyle='#fff';g.font=f;g.textAlign='center';g.textBaseline='middle';g.fillText(s,240,104);
+ const d=g.getImageData(0,0,480,200).data,a=[];for(let y=0;y<200;y+=5)for(let x=0;x<480;x+=5)if(d[(y*480+x)*4+3]>120)a.push([(x-240)/100,(y-100)/100]);return TXT[k]=a}
+function shapeBurst(x,y,pts,R0,c,o={}){const f=.93;pts.forEach(p=>mk(x,y,p[0]*R0*(1-f)+R(-.15,.15),p[1]*R0*(1-f)+R(-.15,.15),c,{life:o.life||105,g:.012,f,sz:o.sz||2.4,tl:3}))}
+function explode(x,y,type){const u=usc(),c=rc(),c2=rc(),big=/heart|txt|star/.test(type);boom(big?1.2:.8);
+ FG.push({x,y,r:(big?340:240)*u,a:.5,h:c[0]});bell(mtof(PENT[(Math.random()*6)|0]),1.1,.05);
+ if(type==='heart')shapeBurst(x,y,SHAPE.heart(),135*u,[340,100,74]);
+ else if(type==='star')shapeBurst(x,y,SHAPE.star(),125*u,[48,100,70]);
+ else if(type==='txt19'||type==='txtLakmi'){const k=type==='txt19'?'19':'Lakmi',pts=txtPts(k),mx=Math.max(...pts.map(p=>Math.abs(p[0])));
+  shapeBurst(x,y,pts,Math.min(innerWidth*.42,k==='19'?190:300)/mx,k==='19'?[45,100,72]:[335,100,80],{life:125,sz:2.6})}
+ else if(type==='ring'){for(let i=0;i<64;i++){const a=i/64*6.283,s=7*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,c,{life:65,tl:6,f:.975})}
+  for(let i=0;i<30;i++){const a=i/30*6.283,s=3.2*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,c2,{life:60,tl:5,f:.975})}}
+ else if(type==='willow'){for(let i=0;i<80;i++){const a=R(0,6.283),s=R(1.5,6)*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,[42,100,70],{life:R(110,150)|0,g:.045,f:.975,tl:14,sz:2,crk:1})}}
+ else if(type==='crackle'){for(let i=0;i<90;i++){const a=R(0,6.283),s=R(2,7.5)*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,i%4?c:[0,0,100],{life:R(60,85)|0,tl:5,crk:1})}}
+ else if(type==='double'){for(let i=0;i<80;i++){const a=R(0,6.283),s=R(5.5,7.5)*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,c)}for(let i=0;i<50;i++){const a=R(0,6.283),s=R(1.5,3.6)*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,c2,{life:75,tw:1})}}
+ else if(type==='spiral'){for(let i=0;i<110;i++){const a=i*.28,s=(1+i*.06)*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,c,{life:80,tl:6})}}
+ else{for(let i=0;i<115;i++){const a=R(0,6.283),s=(Math.random()<.5?R(6.3,7.5):R(1.8,6.3))*u;mk(x,y,Math.cos(a)*s,Math.sin(a)*s,i%5?c:[0,0,100],{tw:i%7===0})}}
+ if(FP.length>2600)FP.splice(0,600)}
+const TYPES=['peony','peony','ring','willow','crackle','double','spiral','star','heart','double'];
+function firework(x,y,type){if(RK.length>14)return;x=x??R(innerWidth*.1,innerWidth*.9);y=y??R(innerHeight*.12,innerHeight*.5);RK.push({x,y:innerHeight+10,ty:y,v:R(15,19),type:type||TYPES[(Math.random()*TYPES.length)|0]});whistle()}
+(function skyLoop(){sx.clearRect(0,0,sky.width,sky.height);sx.globalCompositeOperation='lighter';sx.lineCap='round';sx.lineJoin='round';
+ FG=FG.filter(f=>f.a>.015);for(const f of FG){const g=sx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.r);g.addColorStop(0,`hsla(${f.h},100%,80%,${f.a})`);g.addColorStop(1,'hsla(0,0%,0%,0)');sx.fillStyle=g;sx.fillRect(f.x-f.r,f.y-f.r,f.r*2,f.r*2);f.a*=.86}
+ const nr=[];for(const r of RK){r.y-=r.v;r.v=Math.max(4.5,r.v*.988);r.x+=Math.sin(r.y*.06)*.35;
+  if(Math.random()<.9)mk(r.x,r.y+6,R(-.4,.4),R(.4,1.4),[40,100,78],{life:20,sz:1.3,g:.03,tl:0});
+  if(r.y<=r.ty)explode(r.x,r.y,r.type);else{sx.fillStyle='#fff';sx.beginPath();sx.arc(r.x,r.y,2.4,0,6.283);sx.fill();nr.push(r)}}
+ RK=nr;const np=[];
+ for(const p of FP){p.h.push(p.x,p.y);if(p.h.length>p.tl*2)p.h.splice(0,2);p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.vx*=p.f;p.vy*=p.f;p.life--;if(p.life<=0)continue;
+  if(p.crk&&p.life===14){for(let i=0;i<3;i++)mk(p.x,p.y,R(-1.6,1.6),R(-1.6,1.6),[0,0,100],{life:R(10,26)|0,sz:1.2,tw:1,tl:0,g:.04});if(Math.random()<.03)crackle()}
+  let a=Math.min(1,p.life/(p.max*.55));if(p.tw&&Math.random()<.45)a*=.15;
+  if(p.tl>0&&p.h.length>=4){sx.beginPath();sx.moveTo(p.h[0],p.h[1]);for(let i=2;i<p.h.length;i+=2)sx.lineTo(p.h[i],p.h[i+1]);sx.lineTo(p.x,p.y);sx.strokeStyle=`hsla(${p.cs},${a*.55})`;sx.lineWidth=p.sz*.9;sx.stroke()}
+  sx.fillStyle=`hsla(${p.cs},${a})`;sx.beginPath();sx.arc(p.x,p.y,p.sz*(.6+.4*a),0,6.283);sx.fill();np.push(p)}
+ FP=np;sx.globalCompositeOperation='source-over';requestAnimationFrame(skyLoop)})();
+/* shows */
+function finale(){const w=innerWidth,h=innerHeight;
+ [[0,'peony',.18,.38],[150,'peony',.82,.38],[450,'ring',.32,.26],[600,'ring',.68,.26],[1100,'heart',.5,.34],[2400,'txt19',.5,.36],[3900,'txtLakmi',.5,.34],[5200,'willow',.22,.32],[5300,'willow',.78,.32],[5700,'star',.5,.3],[6200,'crackle',.3,.25],[6350,'crackle',.7,.25]]
+  .forEach(([t,ty,fx,fy])=>setTimeout(()=>firework(w*fx,h*fy,ty),t));
+ for(let i=0;i<16;i++)setTimeout(()=>firework(),6800+i*180);setTimeout(()=>chimes(14,.1),6800);dimPaper(10800)}
+function volley(n=6,gap=300){for(let i=0;i<n;i++)setTimeout(()=>firework(),i*gap)}
+function cannon(){for(const s of [0,1])for(let i=0;i<70;i++){const a=s?-Math.PI+R(.7,1.4):-R(.7,1.4),v=R(14,26);P.push({x:s?cv.width:0,y:cv.height,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:R(0,6),vr:R(-.2,.2),w:R(16,40),img:pick(),life:R(120,200),a:1})}boom(.6)}
+let dimT;function dimPaper(ms){const n=$('#note');n.classList.add('dim');clearTimeout(dimT);dimT=setTimeout(()=>n.classList.remove('dim'),ms)}
+function hint(t){const h=$('#hint');h.textContent=t;h.classList.add('on');setTimeout(()=>h.classList.remove('on'),6500)}
+/* twinkling stars in the night sky */
+for(let i=0;i<70;i++){const s=document.createElement('i');s.style.cssText=`left:${R(0,100)}%;top:${R(0,100)}%;animation-delay:${-R(0,3).toFixed(1)}s;animation-duration:${R(1.5,4).toFixed(1)}s`;$('#dusk').appendChild(s)}
+/* tap anywhere = launch a firework there */
+addEventListener('click',e=>{if(B.classList.contains('clear')&&!e.target.closest('button,.pol,#lb,.wh,#snd'))firework(e.clientX,Math.min(e.clientY,innerHeight*.75))});
 /* sparkle trail */
 function spark(x,y,w=R(14,30)){const s=document.createElement('img');s.src=st(['spark1','spark2','spark5','heart7'][(Math.random()*4)|0]);
  s.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${w}px;pointer-events:none;z-index:75;transition:1s;transform:translate(-50%,-50%)`;B.appendChild(s);
@@ -72,6 +128,7 @@ document.addEventListener('click',e=>{const p=e.target.closest('.pol');
  if(p&&B.classList.contains('clear')){show(ph.indexOf(p.dataset.p));lb.classList.add('on')}
  else if(e.target.id==='prev')show(li-1);else if(e.target.id==='next')show(li+1);
  else if(lb.classList.contains('on')&&e.target.closest('#lb'))lb.classList.remove('on')});
+let tx0=0;lb.addEventListener('touchstart',e=>{tx0=e.touches[0].clientX},{passive:true});lb.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-tx0;if(Math.abs(d)>50)show(li+(d<0?1:-1))});
 addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;if(e.key==='ArrowLeft')show(li-1);if(e.key==='ArrowRight')show(li+1);if(e.key==='Escape')lb.classList.remove('on')});
 /* ================= flower border ================= */
 const FL=['lily1','lily2','tulip','orchid1','orchid2','rose'];
@@ -103,14 +160,15 @@ $('#blow').onclick=async()=>{$('#blow').hidden=true;$('#ask').textContent='💨 
  for(let i=10;i>0;i--){wind=i/10;await sleep(110)}wind=0;B.classList.remove('wind');
  $('#ask').textContent='🌟 Wish made — may it come true, Lakmi 💗';burst(innerWidth/2,innerHeight/2,160,1.5);chimes(10,.14);await sleep(2600);
  B.classList.add('clear','leave');await sleep(1500);
- B.classList.add('bloom');chimes(26,.1);if(ac)mus.gain.setTargetAtTime(1.5,ac.currentTime,1);
+ B.classList.add('bloom');cannon();volley(8,380);chimes(26,.1);if(ac)mus.gain.setTargetAtTime(1.5,ac.currentTime,1);
  for(let i=0;i<4;i++)setTimeout(()=>burst(R(100,innerWidth-100),R(100,innerHeight-100),70,1.2),i*500);rain(60);extras();
  await sleep(4200);flyNote()};
 /* ambient extras after the reveal: butterflies, balloons, shooting stars, falling petals */
 function extras(){for(let i=0;i<6;i++){const d=document.createElement('div');d.className='bfw';d.style.cssText=`top:${R(8,75)}%;--t:${R(16,26)|0}s;--dl:${-R(0,20)|0}s;--w:${R(34,64)|0}px`;d.innerHTML=`<img src="${st(['bfly1','bfly2','bfly4','bfly5'][i%4])}" alt="">`;document.body.appendChild(d)}
  setInterval(()=>rain(5),2800);
  setInterval(()=>{const b=document.createElement('img');b.src=st(Math.random()<.5?'balloons':'heart1');b.className='bal';b.style.cssText=`left:${R(8,88)}%;width:${R(60,110)|0}px;--t:${R(12,20)|0}s;--sx:${R(-120,120)|0}px`;document.body.appendChild(b);setTimeout(()=>b.remove(),21000)},3500);
- setInterval(()=>{const s=document.createElement('i');s.className='ss';s.style.cssText=`left:${R(0,70)}%;top:${R(2,30)}%`;document.body.appendChild(s);setTimeout(()=>s.remove(),1200)},4200)}
+ setInterval(()=>{const s=document.createElement('i');s.className='ss';s.style.cssText=`left:${R(0,70)}%;top:${R(2,30)}%`;document.body.appendChild(s);setTimeout(()=>s.remove(),1200)},4200);
+ setInterval(()=>{if(!document.hidden&&RK.length<3)firework()},2300)}
 /* ================= flying note + message ================= */
 const msg=["Happiest 19th Birthday, Lakmi!! ❤️🎂","I know 2026 hasn't been the easiest year for you, and you've been through a lot this year. But I genuinely hope 2027 will be YOUR year! I hope it brings you all the happiness, peace, and opportunities you've been wishing for. I hope you get to do everything you want, achieve all your goals, and make so many beautiful memories along the way.","You deserve the best, and I really wish that 2027 turns out to be an amazing year for you. May everything you've been working towards fall into place, and may you always find reasons to smile and be happy.","I hope this special day is filled with happiness, laughter, love, and lots of beautiful moments. Enjoy your day to the fullest because 19 only comes once!!","Once again, MANY MANY HAPPY RETURNS OF THE DAY!! ❤️ I wish you nothing but the best for your 19th year and hope 2027 becomes your best year yet!! ✨"];
 $('#msg').innerHTML=msg.map(p=>`<p>${p.split(' ').map(w=>`<span>${w}&nbsp;</span>`).join('')}</p>`).join('');
@@ -119,7 +177,7 @@ async function flyNote(){const n=$('#note'),paper=$('.paper');n.classList.add('f
  await sleep(2900);clearInterval(iv);burst(innerWidth/2,innerHeight/2,90,1.2);[72,76,79,84,88,91].forEach((m,i)=>bell(mtof(m),1.8,.16,ac&&ac.currentTime+.02+i*.09));
  n.classList.add('open');await sleep(900);let c=0;
  for(const s of document.querySelectorAll('#msg span')){s.classList.add('on');if(++c%7===0)bell(mtof(PENT[(Math.random()*6)|0]),1.2,.09);paper.scrollTop=paper.scrollHeight;await sleep(95)}
- await sleep(600);$('.acts').hidden=false;paper.scrollTop=paper.scrollHeight;fanfare();[0,500,1000].forEach(t=>setTimeout(()=>firework(),t));burst(innerWidth/2,innerHeight/2,140,1.5);wishHearts()}
+ await sleep(600);$('.acts').hidden=false;paper.scrollTop=paper.scrollHeight;fanfare();finale();cannon();burst(innerWidth/2,innerHeight/2,140,1.5);wishHearts();setTimeout(()=>hint('Tap anywhere for more fireworks 🎆'),11000)}
 function fanfare(){[60,64,67,72,76,79,84].forEach((m,i)=>bell(mtof(m),1.8,.15,ac&&ac.currentTime+.02+i*.11))}
 /* 19 floating wish hearts */
 const W=['May 2027 be YOUR year 🌸','Endless happiness 💗','Peace in your heart 🕊️','Every opportunity you wished for ✨','Do everything you want 🎀','Every goal achieved 🏆','So many beautiful memories 📸','You deserve the best 👑','Everything falls into place 🧩','Always a reason to smile 😊','Laughter that never stops 😂','Love all around you 💞','Beautiful moments all day 🌷','Enjoy 19 to the fullest 🎂','Your hard work paying off 🌟','Gentle days, good news 🍀','Dreams turning real 🦋','Your best year yet 💖','Happy returns of the day!! 🎉'];
@@ -127,5 +185,5 @@ async function wishHearts(){const t=$('#toast');for(let i=0;i<W.length;i++){awai
  h.style.cssText=`left:${R(6,86)}%;--t:${R(9,14)|0}s;--sx:${R(-80,80)|0}px`;
  h.onclick=e=>{e.stopPropagation();t.textContent=W[i];t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600);burst(e.clientX,e.clientY,30,.9);bell(mtof(PENT[i%6]),1.4,.14);h.remove()};
  document.body.appendChild(h);setTimeout(()=>h.remove(),15000)}}
-$('#again').onclick=()=>{fanfare();[0,300,600,900,1200].forEach(t=>setTimeout(()=>{firework();burst(R(100,innerWidth-100),R(100,innerHeight-200),90,1.4)},t));rain(90)};
+$('#again').onclick=()=>{fanfare();finale();cannon();setTimeout(cannon,1500);rain(90)};
 $('#replay').onclick=()=>location.reload();
