@@ -2,16 +2,6 @@ const $=s=>document.querySelector(s),R=(a,b)=>Math.random()*(b-a)+a,sleep=ms=>ne
 const st=n=>`assets/stickers/${n}.png`;
 const pool=['heart1','heart2','heart3','heart5','heart7','heart8','bow1','bow3','bfly1','bfly2','bfly4','spark1','spark2','petal1','petal2','rose1'];
 const imgs={};pool.forEach(n=>{const i=new Image();i.src=st(n);imgs[n]=i});const keys=Object.keys(imgs);
-/* ================= preload everything, then reveal the start button ================= */
-const KEEP=[];(async function preload(){const ST=['heart1','heart2','heart3','heart5','heart7','heart8','bow1','bow3','bfly1','bfly2','bfly4','bfly5','spark1','spark2','spark5','petal1','petal2','rose1','balloons'],
- PH_=['02','03','06','09','11','13','14','18','19','21','23','24','25','26','27','34','36','38','39'],
- U=[...ST.map(n=>`assets/stickers/${n}.png`),...PH_.map(n=>`assets/photos/p${n}.jpg`),...['lily1','lily2','tulip','orchid1','orchid2','rose','cake','cake-out'].map(n=>`assets/art/${n}.png`),...[1,2,3].map(n=>`assets/lanterns/lan${n}.png`)],
- msgs=['Lighting the candles… 🕯️','Hanging the lanterns… 🏮','Picking the flowers… 🌸','Warming up the fireworks… 🎆'],t0=performance.now();let n=0;
- const mi=setInterval(()=>{$('#ltxt').textContent=msgs[(Math.random()*msgs.length)|0]},900);
- await Promise.all(U.map(u=>new Promise(r=>{const i=new Image();KEEP.push(i);const d=()=>{(i.decode?i.decode().catch(()=>{}):Promise.resolve()).then(()=>{$('#lbar').style.width=(++n/U.length*100)+'%';r()})};i.onload=d;i.onerror=()=>{$('#lbar').style.width=(++n/U.length*100)+'%';r()};i.src=u})));
- try{await Promise.race([document.fonts.ready,sleep(2500)])}catch(e){}
- await sleep(Math.max(0,4500-(performance.now()-t0)));clearInterval(mi);$('#ltxt').textContent='All ready 💗';await sleep(500);
- $('#loader').classList.add('off');document.body.classList.remove('loading');$('#go').hidden=false})();
 /* ================= AUDIO ENGINE (all synthesised) ================= */
 let ac,out,mus,bgTimer,bgBar=0,bgNext=0;const BAR=2.4,mtof=m=>440*2**((m-69)/12);
 function initAudio(){if(ac)return;try{ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.resume)ac.resume();out=ac.createGain();out.gain.value=.9;mus=ac.createGain();mus.gain.value=0;mus.connect(out);
@@ -190,10 +180,11 @@ const song=[[['Hap','G4',.75],['py ','G4',.25],['Birth','A4',1],['day ','G4',1],
 [['Hap','G4',.75],['py ','G4',.25],['Birth','A4',1],['day ','G4',1],['to ','D5',1],['you','C5',2]],
 [['Hap','G4',.75],['py ','G4',.25],['Birth','G5',1],['day ','E5',1],['dear ','C5',1],['Lak','B4',1],['mi','A4',2]],
 [['Hap','F5',.75],['py ','F5',.25],['Birth','E5',1],['day ','C5',1],['to ','D5',1],['you','C5',2]]];
-async function sing(){const lyr=$('#lyr'),beat=.62,t0=(ac?ac.currentTime:0)+.45;let T=0;
- for(const line of song){const Tl=T;setTimeout(()=>{lyr.innerHTML=`<p>${line.map(s=>`<span class="${/\s$/.test(s[0])?'we':''}">${s[0].trim()}</span>`).join('')}</p>`},(Tl+.45)*1000);
-  line.forEach(([,n,b],i)=>{bell(N[n],b*beat*1.2,.24,t0+T);setTimeout(()=>{const sp=lyr.querySelectorAll('span')[i];if(!sp)return;sp.classList.add('on');const r=sp.getBoundingClientRect();burst(r.left+r.width/2,r.top,4,.4)},(T+.45)*1000);T+=b*beat});T+=.45}
- await sleep((T+.45)*1000);lyr.innerHTML=''}
+async function sing(){const lyr=$('#lyr'),beat=.62,t0=performance.now();let T=0;const till=()=>{const w=t0+T*1000-performance.now();return w>0?sleep(w):0};
+ for(const line of song){await till();lyr.innerHTML=`<p>${line.map(s=>`<span class="${/\s$/.test(s[0])?'we':''}">${s[0].trim()}</span>`).join('')}</p>`;const sp=lyr.querySelectorAll('span');
+  for(let i=0;i<line.length;i++){const[,n,b]=line[i];await till();bell(N[n],b*beat*1.2,.24);sp[i].classList.add('on');const r=sp[i].getBoundingClientRect();burst(r.left+r.width/2,r.top,4,.4);T+=b*beat}
+  T+=.45}
+ await till();lyr.innerHTML=''}
 /* ================= the show ================= */
 $('#go').onclick=async()=>{$('#go').hidden=true;initAudio();$('#snd').hidden=false;await sing();bgStart();
  $('#ask').textContent='Close your eyes… make a wish 🌟';await sleep(2400);$('#ask').textContent='Now blow the candles 🎂';$('#blow').hidden=false};
